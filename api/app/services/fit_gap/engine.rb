@@ -87,7 +87,9 @@ module FitGap
     end
 
     def find_portfolio_skill(portfolio_skills, label, skill_id)
-      portfolio_skills.find { |s| s[:skill_id] == skill_id && skill_id.present? } ||
+      # Ids are compared case-insensitively: portfolio rows written before the
+      # canonicalization fix may still carry the model's lowercase variant.
+      portfolio_skills.find { |s| skill_id.present? && s[:skill_id].to_s.casecmp?(skill_id.to_s) } ||
         portfolio_skills.find { |s| s[:skill_label].downcase == label.downcase }
     end
 

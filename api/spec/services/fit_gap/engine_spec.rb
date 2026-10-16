@@ -55,4 +55,14 @@ RSpec.describe FitGap::Engine do
       'is_override' => false
     )
   end
+
+  it 'matches by skill id even when the stored id differs in case' do
+    create(:vacancy_skill, vacancy: vacancy, skill_id: 'SK-ENG-001', skill_label: 'Vacancy label', expected_level: 3)
+    create(:portfolio_skill, portfolio: portfolio, skill_id: 'sk-eng-001', skill_label: 'Portfolio label', ai_level: 3)
+
+    expect(report.skill_comparisons.first).to include(
+      'candidate_level' => 3,
+      'result' => 'match'
+    )
+  end
 end
