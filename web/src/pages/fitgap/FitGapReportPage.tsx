@@ -26,6 +26,7 @@ export default function FitGapReportPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState<"pdf" | "json" | null>(null);
   const [regenerating, setRegenerating] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchReport = useCallback(async () => {
     if (!portfolio) return;
@@ -33,14 +34,19 @@ export default function FitGapReportPage() {
       const res = await portfoliosApi.getFitGap(portfolio.id, Number(vacancyId));
       setReport(res.data.report);
       setGenerating(false);
+      setLoadError(null);
     } catch (e: unknown) {
       if (axios.isAxiosError(e) && e.response?.status === 404) {
         try {
           await portfoliosApi.triggerFitGap(portfolio.id, Number(vacancyId));
           setGenerating(true);
+          setLoadError(null);
         } catch {
           setGenerating(false);
+          setLoadError("We couldn't start generating the fit/gap report. Please try again.");
         }
+      } else {
+        setLoadError("We couldn't load the fit/gap report. Please try again.");
       }
     }
   }, [portfolio, vacancyId]);
@@ -147,6 +153,23 @@ export default function FitGapReportPage() {
         <div className="border rounded-lg p-12 text-center space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
           <p className="text-sm text-muted-foreground">Generating fit/gap report...</p>
+        </div>
+      )}
+
+      {/* Failed to load or start generation */}
+      {loadError && !report && !generating && (
+        <div className="border rounded-lg p-8 text-center space-y-3">
+          <p className="text-sm text-muted-foreground">{loadError}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setLoadError(null);
+              fetchReport();
+            }}
+          >
+            Try again
+          </Button>
         </div>
       )}
 
