@@ -12,6 +12,9 @@ export interface InternetSpeedResult {
     upload: number;
     ping: number;
     passed: boolean;
+    // True when no probe of any kind succeeded (the server was never reached).
+    // The UI must say "unreachable" instead of showing zeroes as if measured.
+    unreachable: boolean;
     downloadTests: number[];
     uploadTests: number[];
     pingTests: number[];
@@ -149,11 +152,15 @@ export async function testInternetSpeed(
             uploadMbps >= thresholds.minUploadMbps &&
             ping <= thresholds.maxPingMs;
 
+        const unreachable =
+            downloadTests.length === 0 && uploadTests.length === 0 && pingTests.length === 0;
+
         return {
             download: Math.round(downloadMbps * 100) / 100,
             upload: Math.round(uploadMbps * 100) / 100,
             ping: Math.round(ping),
             passed,
+            unreachable,
             downloadTests: downloadTests.map((v) => Math.round(toMbps(v) * 100) / 100),
             uploadTests: uploadTests.map((v) => Math.round(toMbps(v) * 100) / 100),
             pingTests: pingTests.map((v) => Math.round(v)),
@@ -164,6 +171,7 @@ export async function testInternetSpeed(
             upload: 0,
             ping: UNREACHABLE_PING_MS,
             passed: false,
+            unreachable: true,
             downloadTests: [],
             uploadTests: [],
             pingTests: [],

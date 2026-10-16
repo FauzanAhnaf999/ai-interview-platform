@@ -71,6 +71,7 @@ describe("testInternetSpeed", () => {
         const result = await testInternetSpeed({ minDownloadMbps: 1_000_000, minUploadMbps: 1, maxPingMs: 300 });
 
         expect(result.passed).toBe(false);
+        expect(result.unreachable).toBe(false);
     });
 
     it("fails closed when the API is unreachable", async () => {
@@ -82,6 +83,7 @@ describe("testInternetSpeed", () => {
         expect(result.download).toBe(0);
         expect(result.upload).toBe(0);
         expect(result.ping).toBe(999);
+        expect(result.unreachable).toBe(true);
         expect(result.downloadTests).toEqual([]);
         expect(result.uploadTests).toEqual([]);
         expect(result.pingTests).toEqual([]);
@@ -105,6 +107,7 @@ describe("testInternetSpeed", () => {
         expect(result.upload).toBe(0);
         expect(result.uploadTests).toEqual([]);
         expect(result.passed).toBe(false);
+        expect(result.unreachable).toBe(false);
     });
 
     it("rejects an upload the API did not fully receive", async () => {
