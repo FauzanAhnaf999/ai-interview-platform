@@ -23,9 +23,13 @@ export interface SpeedThresholds {
     maxPingMs: number;
 }
 
+// Voice interviews need roughly 0.1 Mbps in each direction; the thresholds
+// below keep ample headroom for jitter while staying reachable on ordinary
+// home connections. Higher bars lock out candidates whose connection would
+// actually have worked.
 export const DEFAULT_THRESHOLDS: SpeedThresholds = {
-    minDownloadMbps: 8,
-    minUploadMbps: 4,
+    minDownloadMbps: 2,
+    minUploadMbps: 1,
     maxPingMs: 300,
 };
 

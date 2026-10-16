@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { DOWNLOAD_TEST_BYTES, UPLOAD_TEST_BYTES, testInternetSpeed } from "./internetSpeedTest";
+import { DEFAULT_THRESHOLDS, DOWNLOAD_TEST_BYTES, UPLOAD_TEST_BYTES, testInternetSpeed } from "./internetSpeedTest";
 
 // Hosts the pre-flight check used to call before it measured against the API
 // origin. The production CSP blocks all of them, which made every candidate
@@ -35,6 +35,10 @@ describe("testInternetSpeed", () => {
         vi.unstubAllGlobals();
     });
 
+    it("requires 2 Mbps down, 1 Mbps up and under 300 ms", () => {
+        expect(DEFAULT_THRESHOLDS).toEqual({ minDownloadMbps: 2, minUploadMbps: 1, maxPingMs: 300 });
+    });
+
     it("only calls the interview API, never third-party hosts", async () => {
         const { calls } = stubHealthyApi();
 
@@ -59,6 +63,14 @@ describe("testInternetSpeed", () => {
         expect(result.downloadTests).toHaveLength(3);
         expect(result.uploadTests).toHaveLength(3);
         expect(result.pingTests).toHaveLength(3);
+    });
+
+    it("fails when a measurement stays below the required threshold", async () => {
+        stubHealthyApi();
+
+        const result = await testInternetSpeed({ minDownloadMbps: 1_000_000, minUploadMbps: 1, maxPingMs: 300 });
+
+        expect(result.passed).toBe(false);
     });
 
     it("fails closed when the API is unreachable", async () => {
