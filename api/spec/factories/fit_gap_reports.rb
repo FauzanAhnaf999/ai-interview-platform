@@ -14,7 +14,8 @@ FactoryBot.define do
           'expected_level' => 3,
           'result' => 'match',
           'delta' => 0,
-          'confidence' => 'medium'
+          'confidence' => 'medium',
+          'is_override' => false
         }
       ]
     end
