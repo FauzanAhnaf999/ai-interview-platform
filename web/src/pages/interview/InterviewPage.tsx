@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import type { ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +24,29 @@ import { sessionsApi } from "@/services/sessions";
 import HardwareCheck from "@/components/HardwareCheck";
 import { AlertCircle, CheckCircle, Link2Off, Mic, MicOff, RefreshCw, WifiOff } from "lucide-react";
 import type { CandidateInfo, InterviewState, InterviewSpeaker, TranscriptTurn } from "@/types";
+
+// Every full-page notice shares one layout so the states stay visually
+// consistent and there is a single place to adjust spacing.
+function InterviewNotice({
+  icon,
+  title,
+  action,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+      {icon}
+      <h2 className="text-xl font-semibold">{title}</h2>
+      <p className="text-sm text-muted-foreground">{children}</p>
+      {action}
+    </div>
+  );
+}
 
 export default function InterviewPage() {
   const { token } = useParams<{ token: string }>();
@@ -222,47 +246,46 @@ export default function InterviewPage() {
   // ── States: Candidate info loading / failures ───────────────────────────
   if (loadError === "invalid") {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-        <Link2Off className="h-10 w-10 mx-auto text-muted-foreground/60" />
-        <h2 className="text-xl font-semibold">This interview link is not valid</h2>
-        <p className="text-sm text-muted-foreground">
-          The link may have expired or been copied incorrectly.
-          <br />
-          Please contact the hiring team that invited you to get a new one.
-        </p>
-      </div>
+      <InterviewNotice
+        icon={<Link2Off className="h-10 w-10 mx-auto text-muted-foreground/60" />}
+        title="This interview link is not valid"
+      >
+        The link may have expired or been copied incorrectly.
+        <br />
+        Please contact the hiring team that invited you to get a new one.
+      </InterviewNotice>
     );
   }
 
   if (loadError === "unavailable") {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-        <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground/60" />
-        <h2 className="text-xl font-semibold">This interview is no longer available</h2>
-        <p className="text-sm text-muted-foreground">
-          This session can't be started from this link.
-          <br />
-          Please contact the hiring team that invited you.
-        </p>
-      </div>
+      <InterviewNotice
+        icon={<AlertCircle className="h-10 w-10 mx-auto text-muted-foreground/60" />}
+        title="This interview is no longer available"
+      >
+        This session can't be started from this link.
+        <br />
+        Please contact the hiring team that invited you.
+      </InterviewNotice>
     );
   }
 
   if (loadError === "unreachable") {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-        <AlertCircle className="h-10 w-10 mx-auto text-destructive" />
-        <h2 className="text-xl font-semibold">We couldn't load your interview</h2>
-        <p className="text-sm text-muted-foreground">
-          Check your internet connection and try again.
-          <br />
-          If this keeps happening, contact the hiring team that invited you.
-        </p>
-        <Button onClick={() => setLoadAttempt((n) => n + 1)}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try again
-        </Button>
-      </div>
+      <InterviewNotice
+        icon={<AlertCircle className="h-10 w-10 mx-auto text-destructive" />}
+        title="We couldn't load your interview"
+        action={
+          <Button onClick={() => setLoadAttempt((n) => n + 1)}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try again
+          </Button>
+        }
+      >
+        Check your internet connection and try again.
+        <br />
+        If this keeps happening, contact the hiring team that invited you.
+      </InterviewNotice>
     );
   }
 
@@ -317,61 +340,59 @@ export default function InterviewPage() {
   if (interviewState === "complete") {
     if (endedOnOpen && !endedOnOpen.started) {
       return (
-        <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-          <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground/60" />
-          <h2 className="text-xl font-semibold">This interview was closed before it started</h2>
-          <p className="text-sm text-muted-foreground">
-            The hiring team ended this session while it was still waiting for you.
-            <br />
-            Contact them if you would still like to take the interview.
-          </p>
-        </div>
+        <InterviewNotice
+          icon={<AlertCircle className="h-10 w-10 mx-auto text-muted-foreground/60" />}
+          title="This interview was closed before it started"
+        >
+          The hiring team ended this session while it was still waiting for you.
+          <br />
+          Contact them if you would still like to take the interview.
+        </InterviewNotice>
       );
     }
 
     if (endedOnOpen?.reason === "error") {
       return (
-        <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-          <AlertCircle className="h-10 w-10 mx-auto text-destructive" />
-          <h2 className="text-xl font-semibold">This interview was interrupted</h2>
-          <p className="text-sm text-muted-foreground">
-            Technical problems ended this session early. Your answers up to that point have been saved.
-            <br />
-            Please contact the hiring team that invited you to arrange a new interview.
-          </p>
-        </div>
+        <InterviewNotice
+          icon={<AlertCircle className="h-10 w-10 mx-auto text-destructive" />}
+          title="This interview was interrupted"
+        >
+          Technical problems ended this session early. Your answers up to that point have been saved.
+          <br />
+          Please contact the hiring team that invited you to arrange a new interview.
+        </InterviewNotice>
       );
     }
 
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-        <div className="text-4xl">✅</div>
-        <h2 className="text-xl font-semibold">Interview Complete</h2>
-        <p className="text-sm text-muted-foreground">
-          Thank you. The interview has been recorded.
-          <br />
-          The hiring team will review your results and follow up with you.
-        </p>
-      </div>
+      <InterviewNotice
+        icon={<div className="text-4xl">✅</div>}
+        title="Interview Complete"
+      >
+        Thank you. The interview has been recorded.
+        <br />
+        The hiring team will review your results and follow up with you.
+      </InterviewNotice>
     );
   }
 
   // ── State: Connection lost ──────────────────────────────────────────────
   if (interviewState === "connection_lost") {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
-        <WifiOff className="h-10 w-10 mx-auto text-destructive" />
-        <h2 className="text-xl font-semibold">We lost the connection to your interview</h2>
-        <p className="text-sm text-muted-foreground">
-          Your interview is still open. Check your internet connection, then reconnect.
-          <br />
-          If this keeps happening, reload the page or contact the hiring team that invited you.
-        </p>
-        <Button onClick={reconnect}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Reconnect
-        </Button>
-      </div>
+      <InterviewNotice
+        icon={<WifiOff className="h-10 w-10 mx-auto text-destructive" />}
+        title="We lost the connection to your interview"
+        action={
+          <Button onClick={reconnect}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Reconnect
+          </Button>
+        }
+      >
+        Your interview is still open. Check your internet connection, then reconnect.
+        <br />
+        If this keeps happening, reload the page or contact the hiring team that invited you.
+      </InterviewNotice>
     );
   }
 
