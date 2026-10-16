@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -132,6 +133,7 @@ export default function AssessmentInvitePage() {
   const [newSessionCopied, setNewSessionCopied] = useState(false);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [candidateNameInput, setCandidateNameInput] = useState("");
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const loadSessions = useCallback(async () => {
     const res = await assessmentsApi.getSessions(Number(id));
@@ -158,18 +160,27 @@ export default function AssessmentInvitePage() {
 
   const openInviteDialog = () => {
     setCandidateNameInput("");
+    setInviteError(null);
     setShowInviteDialog(true);
   };
 
   const handleInviteCandidate = async () => {
+    if (creatingSession) return;
     setCreatingSession(true);
-    setShowInviteDialog(false);
-    setNewSession(null);
+    setInviteError(null);
     try {
       const res = await assessmentsApi.createSession(Number(id), candidateNameInput.trim() || undefined);
       const created = res.data.session;
       setNewSession(created);
       setSessions((prev) => [created, ...prev]);
+      setShowInviteDialog(false);
+    } catch (e) {
+      const status = axios.isAxiosError(e) ? e.response?.status : undefined;
+      setInviteError(
+        status === 422
+          ? "The server rejected this invite. Check the candidate name and try again."
+          : "Couldn't create the invite link. Check your connection and try again."
+      );
     } finally {
       setCreatingSession(false);
     }
@@ -244,9 +255,14 @@ export default function AssessmentInvitePage() {
             />
             <p className="text-xs text-muted-foreground">Optional — helps you identify this session later.</p>
           </div>
+          {inviteError && (
+            <p role="alert" className="text-sm text-destructive">{inviteError}</p>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Cancel</Button>
-            <Button onClick={handleInviteCandidate}>Create Link</Button>
+            <Button onClick={handleInviteCandidate} disabled={creatingSession}>
+              {creatingSession ? "Creating..." : "Create Link"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
