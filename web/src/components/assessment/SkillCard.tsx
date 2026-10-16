@@ -75,7 +75,7 @@ export default function SkillCard({ index, id, form, onRemove }: SkillCardProps)
           <CustomSkillForm index={index} form={form} />
         ) : (
           <div className="space-y-3">
-            {/* B7 skill: show anchors toggle */}
+            {/* Taxonomy skill: show anchors toggle */}
             <button
               type="button"
               onClick={() => setAnchorsOpen((o) => !o)}
