@@ -149,11 +149,23 @@ module Portfolios
 
     def save_skills(portfolio, response)
       data = response.is_a?(Hash) ? response : JSON.parse(response)
+      configured = Array(data['configured_skills'])
+      discovered = Array(data['discovered_skills'])
+
+      # Validate the whole payload before writing anything: a malformed entry
+      # must fail generation cleanly instead of leaving half-written skills.
+      (configured + discovered).each do |skill_data|
+        raise ArgumentError, 'model output is missing skill_label' if skill_data['skill_label'].blank?
+
+        if skill_data['level'].nil?
+          raise ArgumentError, "model output is missing level for #{skill_data['skill_label']}"
+        end
+      end
 
       # Destroy existing skills (idempotent regeneration)
       portfolio.portfolio_skills.destroy_all
 
-      (data['configured_skills'] || []).each do |skill_data|
+      configured.each do |skill_data|
         portfolio.portfolio_skills.create!(
           skill_id:           canonical_skill_id(skill_data['skill_id'], skill_data['skill_label']),
           skill_label:        skill_data['skill_label'],
@@ -165,7 +177,7 @@ module Portfolios
         )
       end
 
-      (data['discovered_skills'] || []).each do |skill_data|
+      discovered.each do |skill_data|
         portfolio.portfolio_skills.create!(
           skill_id:           canonical_skill_id(nil, skill_data['skill_label']),
           skill_label:        skill_data['skill_label'],

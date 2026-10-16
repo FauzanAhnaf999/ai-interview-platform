@@ -104,4 +104,50 @@ RSpec.describe Portfolios::Generator do
       expect(portfolio.portfolio_skills.first.is_discovered).to be(true)
     end
   end
+
+  context 'when the model returns malformed JSON' do
+    let(:response) { 'not json at all' }
+
+    it 'fails the portfolio and stores no skills' do
+      expect { portfolio }.to raise_error(JSON::ParserError)
+
+      reloaded = session.portfolio.reload
+      expect(reloaded.generation_status).to eq('failed')
+      expect(reloaded.generation_error).to be_present
+      expect(reloaded.portfolio_skills).to be_empty
+    end
+  end
+
+  context 'when a skill entry is missing its level' do
+    let(:response) do
+      {
+        'configured_skills' => [
+          {
+            'skill_id' => 'SK-ENG-001',
+            'skill_label' => 'React / Frontend Development Core',
+            'level' => 3,
+            'confidence' => 'high',
+            'evidence' => ['A quote.'],
+            'competency_summary' => 'Summary.'
+          },
+          {
+            'skill_id' => 'sk-eng-001',
+            'skill_label' => 'Incomplete entry',
+            'confidence' => 'low',
+            'evidence' => ['A quote.'],
+            'competency_summary' => 'Summary.'
+          }
+        ]
+      }
+    end
+
+    it 'fails without leaving half-written skills behind' do
+      expect { portfolio }.to raise_error(ArgumentError)
+
+      reloaded = session.portfolio.reload
+      expect(reloaded.generation_status).to eq('failed')
+      expect(reloaded.generation_error).to match(/missing level/)
+      expect(reloaded.portfolio_skills).to be_empty
+    end
+  end
 end
