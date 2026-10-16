@@ -15,7 +15,7 @@ class Portfolio < ApplicationRecord
 
   # Portfolios have no tenant_id of their own; tenancy is inherited from the
   # session. Use this to keep cross-tenant lookups fail-closed (404).
-  scope :for_tenant, ->(_tenant_id) { all }
+  scope :for_tenant, ->(tenant_id) { joins(:session).where(sessions: { tenant_id: }) }
 
   def complete?    = generation_status == 'complete'
   def generating?  = generation_status == 'generating'
