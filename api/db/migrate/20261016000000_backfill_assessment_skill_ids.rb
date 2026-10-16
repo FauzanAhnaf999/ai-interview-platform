@@ -7,7 +7,7 @@
 # before the picker fix ships.
 class BackfillAssessmentSkillIds < ActiveRecord::Migration[7.0]
   def up
-    execute "SET search_path TO ai_interview, public"
+    execute 'SET search_path TO ai_interview, public'
 
     execute <<~SQL
       UPDATE assessment_skills
@@ -20,7 +20,7 @@ class BackfillAssessmentSkillIds < ActiveRecord::Migration[7.0]
   end
 
   def down
-    execute "SET search_path TO ai_interview, public"
+    execute 'SET search_path TO ai_interview, public'
 
     execute <<~SQL
       UPDATE assessment_skills
