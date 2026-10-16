@@ -21,7 +21,7 @@ import { useAudioPlayback } from "@/hooks/useAudioPlayback";
 import { useAudioWebSocket } from "@/hooks/useAudioWebSocket";
 import { sessionsApi } from "@/services/sessions";
 import HardwareCheck from "@/components/HardwareCheck";
-import { CheckCircle, Mic, MicOff } from "lucide-react";
+import { AlertCircle, CheckCircle, Link2Off, Mic, MicOff, RefreshCw } from "lucide-react";
 import type { CandidateInfo, InterviewState, InterviewSpeaker, TranscriptTurn } from "@/types";
 
 export default function InterviewPage() {
@@ -38,18 +38,44 @@ export default function InterviewPage() {
   const connectionLostTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [micMuted, setMicMuted] = useState(false);
   const micMutedRef = useRef(false);
+  const [loadError, setLoadError] = useState<"invalid" | "unavailable" | "unreachable" | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const [endedOnOpen, setEndedOnOpen] = useState<{ started: boolean; reason: string | null } | null>(null);
 
-  // Fetch candidate info
+  // Fetch candidate info. Failures render as explicit states — they must never
+  // fall through to the "Interview Complete" screen, which told candidates that
+  // a dead link or an API outage had been recorded.
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setLoadError("invalid");
+      return;
+    }
+    let cancelled = false;
+    setLoadError(null);
     sessionsApi.getCandidateInfo(token)
       .then((res) => {
+        if (cancelled) return;
         setCandidateInfo(res.data);
         setSessionId(res.data.session_id);
-        if (res.data.session_status === "ended") setInterviewState("complete");
+        const status = res.data.session_status;
+        if (status === "ended") {
+          setEndedOnOpen({
+            started: res.data.interview_started,
+            reason: res.data.end_reason,
+          });
+          setInterviewState("complete");
+        } else if (status !== "pending" && status !== "active") {
+          setLoadError("unavailable");
+        }
       })
-      .catch(() => setInterviewState("complete"));
-  }, [token]);
+      .catch((e) => {
+        if (cancelled) return;
+        setLoadError(e?.response?.status === 404 ? "invalid" : "unreachable");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, loadAttempt]);
 
   const muteRef = useRef<(() => void) | null>(null);
   const unmuteRef = useRef<(() => void) | null>(null);
@@ -187,6 +213,61 @@ export default function InterviewPage() {
       ? "connected"
       : "reconnecting";
 
+  // ── States: Candidate info loading / failures ───────────────────────────
+  if (loadError === "invalid") {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+        <Link2Off className="h-10 w-10 mx-auto text-muted-foreground/60" />
+        <h2 className="text-xl font-semibold">This interview link is not valid</h2>
+        <p className="text-sm text-muted-foreground">
+          The link may have expired or been copied incorrectly.
+          <br />
+          Please contact the hiring team that invited you to get a new one.
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError === "unavailable") {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+        <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground/60" />
+        <h2 className="text-xl font-semibold">This interview is no longer available</h2>
+        <p className="text-sm text-muted-foreground">
+          This session can't be started from this link.
+          <br />
+          Please contact the hiring team that invited you.
+        </p>
+      </div>
+    );
+  }
+
+  if (loadError === "unreachable") {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+        <AlertCircle className="h-10 w-10 mx-auto text-destructive" />
+        <h2 className="text-xl font-semibold">We couldn't load your interview</h2>
+        <p className="text-sm text-muted-foreground">
+          Check your internet connection and try again.
+          <br />
+          If this keeps happening, contact the hiring team that invited you.
+        </p>
+        <Button onClick={() => setLoadAttempt((n) => n + 1)}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  if (!candidateInfo) {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center">
+        <p className="text-sm text-muted-foreground animate-pulse">Loading your interview…</p>
+      </div>
+    );
+  }
+
   // ── State A: Pre-start ──────────────────────────────────────────────────
   if (interviewState === "idle") {
     return (
@@ -228,6 +309,34 @@ export default function InterviewPage() {
 
   // ── State F: Complete ───────────────────────────────────────────────────
   if (interviewState === "complete") {
+    if (endedOnOpen && !endedOnOpen.started) {
+      return (
+        <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+          <AlertCircle className="h-10 w-10 mx-auto text-muted-foreground/60" />
+          <h2 className="text-xl font-semibold">This interview was closed before it started</h2>
+          <p className="text-sm text-muted-foreground">
+            The hiring team ended this session while it was still waiting for you.
+            <br />
+            Contact them if you would still like to take the interview.
+          </p>
+        </div>
+      );
+    }
+
+    if (endedOnOpen?.reason === "error") {
+      return (
+        <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+          <AlertCircle className="h-10 w-10 mx-auto text-destructive" />
+          <h2 className="text-xl font-semibold">This interview was interrupted</h2>
+          <p className="text-sm text-muted-foreground">
+            Technical problems ended this session early. Your answers up to that point have been saved.
+            <br />
+            Please contact the hiring team that invited you to arrange a new interview.
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
         <div className="text-4xl">✅</div>
