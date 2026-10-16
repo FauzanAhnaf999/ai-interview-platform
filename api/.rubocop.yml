@@ -36,3 +36,8 @@ RSpec/MultipleExpectations:
 
 RSpec/ExampleLength:
   Max: 12
+
+# Cross-tenant request specs build two full object graphs; the default of 5
+# memoized helpers is too low for request-level fixtures.
+RSpec/MultipleMemoizedHelpers:
+  Max: 15
