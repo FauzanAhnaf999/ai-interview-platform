@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
+import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -8,6 +9,7 @@ import ComparisonTable from "@/components/fitgap/ComparisonTable";
 import { portfoliosApi } from "@/services/portfolios";
 import { sessionsApi } from "@/services/sessions";
 import { usePolling } from "@/hooks/usePolling";
+import { LEVEL_LABELS } from "@/utils/constants";
 import { ArrowLeft, Download, Loader2, RefreshCw, Zap } from "lucide-react";
 import type { FitGapReport, Portfolio } from "@/types";
 
@@ -31,8 +33,8 @@ export default function FitGapReportPage() {
       const res = await portfoliosApi.getFitGap(portfolio.id, Number(vacancyId));
       setReport(res.data.report);
       setGenerating(false);
-    } catch (e: any) {
-      if (e?.response?.status === 404) {
+    } catch (e: unknown) {
+      if (axios.isAxiosError(e) && e.response?.status === 404) {
         try {
           await portfoliosApi.triggerFitGap(portfolio.id, Number(vacancyId));
           setGenerating(true);
@@ -47,8 +49,8 @@ export default function FitGapReportPage() {
     sessionsApi
       .getPortfolio(Number(sessionId))
       .then(async (res) => {
-        const data = res.data as any;
-        if (data.portfolio) {
+        const data = res.data;
+        if ("portfolio" in data) {
           setPortfolio(data.portfolio);
         }
       })
@@ -193,7 +195,7 @@ export default function FitGapReportPage() {
                       <div key={s.id} className="text-sm flex items-center gap-2">
                         <span className="font-medium">{s.skill_label}</span>
                         <span className="text-muted-foreground">
-                          {s.ai_level} ({s.ai_confidence?.toLowerCase() === "low" ? "low confidence" : "confirmed"})
+                          {LEVEL_LABELS[s.ai_level]} ({s.ai_confidence?.toLowerCase() === "low" ? "low confidence" : "confirmed"})
                         </span>
                         <span className="text-xs text-muted-foreground">— Not required for this role, may be additive.</span>
                       </div>
