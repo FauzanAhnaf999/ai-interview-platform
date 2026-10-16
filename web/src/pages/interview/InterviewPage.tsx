@@ -21,7 +21,7 @@ import { useAudioPlayback } from "@/hooks/useAudioPlayback";
 import { useAudioWebSocket } from "@/hooks/useAudioWebSocket";
 import { sessionsApi } from "@/services/sessions";
 import HardwareCheck from "@/components/HardwareCheck";
-import { AlertCircle, CheckCircle, Link2Off, Mic, MicOff, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle, Link2Off, Mic, MicOff, RefreshCw, WifiOff } from "lucide-react";
 import type { CandidateInfo, InterviewState, InterviewSpeaker, TranscriptTurn } from "@/types";
 
 export default function InterviewPage() {
@@ -106,6 +106,7 @@ export default function InterviewPage() {
         connectionLostTimerRef.current = null;
       }
       setConnectionLostLong(false);
+      if (state === "connection_lost") muteRef.current?.();
       if (state === "active" && !micMutedRef.current) unmuteRef.current?.();
     }
   }, []);
@@ -205,6 +206,11 @@ export default function InterviewPage() {
     disconnect();
     setInterviewState("complete");
   }, [stopCapture, stopPlayback, sendJson, disconnect]);
+
+  const reconnect = useCallback(() => {
+    setInterviewState("connecting");
+    connect();
+  }, [connect]);
 
   const wsConnectionStatus =
     interviewState === "reconnecting"
@@ -346,6 +352,25 @@ export default function InterviewPage() {
           <br />
           The hiring team will review your results and follow up with you.
         </p>
+      </div>
+    );
+  }
+
+  // ── State: Connection lost ──────────────────────────────────────────────
+  if (interviewState === "connection_lost") {
+    return (
+      <div className="max-w-xl mx-auto px-4 py-16 text-center space-y-4">
+        <WifiOff className="h-10 w-10 mx-auto text-destructive" />
+        <h2 className="text-xl font-semibold">We lost the connection to your interview</h2>
+        <p className="text-sm text-muted-foreground">
+          Your interview is still open. Check your internet connection, then reconnect.
+          <br />
+          If this keeps happening, reload the page or contact the hiring team that invited you.
+        </p>
+        <Button onClick={reconnect}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Reconnect
+        </Button>
       </div>
     );
   }

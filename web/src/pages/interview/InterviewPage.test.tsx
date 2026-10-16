@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { AxiosResponse } from "axios";
 
 import InterviewPage from "./InterviewPage";
 import { sessionsApi } from "@/services/sessions";
-import type { CandidateInfo } from "@/types";
+import type { CandidateInfo, InterviewState } from "@/types";
+
+const audioWs = vi.hoisted(() => ({
+    connect: vi.fn(),
+    latestStateChange: undefined as ((state: InterviewState) => void) | undefined,
+}));
 
 vi.mock("@/services/sessions", () => ({
     sessionsApi: { getCandidateInfo: vi.fn() },
@@ -28,13 +33,16 @@ vi.mock("@/hooks/useAudioPlayback", () => ({
 }));
 
 vi.mock("@/hooks/useAudioWebSocket", () => ({
-    useAudioWebSocket: () => ({
-        connect: vi.fn(),
-        send: vi.fn(),
-        sendJson: vi.fn(),
-        disconnect: vi.fn(),
-        connectionState: "disconnected",
-    }),
+    useAudioWebSocket: (options: { onStateChange: (state: InterviewState) => void }) => {
+        audioWs.latestStateChange = options.onStateChange;
+        return {
+            connect: audioWs.connect,
+            send: vi.fn(),
+            sendJson: vi.fn(),
+            disconnect: vi.fn(),
+            connectionState: "disconnected",
+        };
+    },
 }));
 
 vi.mock("@/components/HardwareCheck", () => ({
@@ -150,5 +158,22 @@ describe("InterviewPage candidate info states", () => {
 
         expect(await screen.findByText(/this interview is no longer available/i)).toBeInTheDocument();
         expect(screen.queryByText(/interview complete/i)).not.toBeInTheDocument();
+    });
+
+    it("shows a reconnect screen instead of completion when the interview connection is lost", async () => {
+        getCandidateInfo.mockResolvedValue(ok({ session_status: "active", interview_started: true }));
+
+        renderPage();
+        await screen.findByTestId("hardware-check");
+
+        act(() => audioWs.latestStateChange?.("connection_lost"));
+
+        expect(screen.getByText(/lost the connection/i)).toBeInTheDocument();
+        expect(screen.queryByText(/interview complete/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/has been recorded/i)).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("button", { name: /reconnect/i }));
+        expect(audioWs.connect).toHaveBeenCalledTimes(1);
+        expect(screen.getByText("Connecting...")).toBeInTheDocument();
     });
 });

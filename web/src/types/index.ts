@@ -182,6 +182,7 @@ export type InterviewState =
   | "connecting"
   | "active"
   | "reconnecting"
+  | "connection_lost"
   | "draining_audio"
   | "ending"
   | "complete";
