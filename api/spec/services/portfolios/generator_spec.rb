@@ -105,6 +105,48 @@ RSpec.describe Portfolios::Generator do
     end
   end
 
+  context 'when the model call times out' do
+    let(:gemini_client) { instance_double(Gemini::HttpClient) }
+
+    before do
+      allow(gemini_client).to receive(:generate_content)
+        .and_raise(Gemini::HttpClient::TimeoutError, 'Gemini API timeout after 180s')
+    end
+
+    it 'fails the portfolio without leaving skills behind' do
+      expect { portfolio }.to raise_error(Gemini::HttpClient::TimeoutError)
+
+      reloaded = session.portfolio.reload
+      expect(reloaded.generation_status).to eq('failed')
+      expect(reloaded.generation_error).to be_present
+      expect(reloaded.portfolio_skills).to be_empty
+    end
+  end
+
+  context 'when generation runs twice (duplicate job)' do
+    let(:response) do
+      {
+        'configured_skills' => [
+          {
+            'skill_id' => 'SK-ENG-001',
+            'skill_label' => 'React / Frontend Development Core',
+            'level' => 3,
+            'confidence' => 'high',
+            'evidence' => ['A quote.'],
+            'competency_summary' => 'Summary.'
+          }
+        ]
+      }
+    end
+
+    it 'replaces existing skills instead of duplicating them' do
+      described_class.new(session: session, gemini_client: gemini_client).call
+      described_class.new(session: session, gemini_client: gemini_client).call
+
+      expect(session.portfolio.reload.portfolio_skills.count).to eq(1)
+    end
+  end
+
   context 'when the model returns malformed JSON' do
     let(:response) { 'not json at all' }
 
