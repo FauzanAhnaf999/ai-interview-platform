@@ -65,4 +65,33 @@ RSpec.describe FitGap::Engine do
       'result' => 'match'
     )
   end
+
+  context 'when the narrative model call fails' do
+    let(:gemini_client) { instance_double(Gemini::HttpClient) }
+
+    before do
+      allow(gemini_client).to receive(:generate_content)
+        .and_raise(Gemini::HttpClient::ApiError, 'API returned 500')
+    end
+
+    it 'still persists the report with a rule-based fallback narrative' do
+      create(:vacancy_skill, vacancy: vacancy, skill_label: 'React', expected_level: 3)
+      create(:portfolio_skill, portfolio: portfolio, skill_label: 'React', ai_level: 3)
+
+      expect(report.culture_narrative).to be_nil
+      expect(report.overall_narrative).to include('1 skill matches')
+      expect(report.skill_comparisons.first).to include('result' => 'match')
+    end
+  end
+
+  it 'reuses the existing report on re-generation (duplicate job)' do
+    create(:vacancy_skill, vacancy: vacancy, skill_label: 'React', expected_level: 3)
+    create(:portfolio_skill, portfolio: portfolio, skill_label: 'React', ai_level: 2)
+
+    first = described_class.new(portfolio: portfolio, vacancy: vacancy, gemini_client: gemini_client).call
+    second = described_class.new(portfolio: portfolio, vacancy: vacancy, gemini_client: gemini_client).call
+
+    expect(second.id).to eq(first.id)
+    expect(FitGapReport.where(portfolio_id: portfolio.id).count).to eq(1)
+  end
 end
