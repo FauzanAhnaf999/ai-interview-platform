@@ -64,7 +64,7 @@
     <tr><td class="k">Repository</td><td>github.com/rakamindev/ai-interview-platform</td></tr>
     <tr><td class="k">Branch</td><td><code>feat/platform-revamp</code> · code HEAD <code>55c8a08</code> · 34 commits · 92 files changed (+8,927 / −180); report/screenshot commits are docs-only</td></tr>
     <tr><td class="k">Pull request</td><td><a href="https://github.com/rakamindev/ai-interview-platform/pull/182">github.com/rakamindev/ai-interview-platform/pull/182</a></td></tr>
-    <tr><td class="k">Video walkthrough</td><td><span class="placeholder">[video link, added before portal submission]</span></td></tr>
+    <tr><td class="k">Video walkthrough</td><td><a href="https://github.com/FauzanAhnaf999/ai-interview-platform/releases/download/case-study-walkthrough/walkthrough.mp4">walkthrough.mp4</a> — captioned screen recording of the live app (GitHub release asset, public)</td></tr>
     <tr><td class="k">Claimed depth</td><td>Frontend-heavy, with real backend depth, argued with evidence in §9</td></tr>
   </table>
 </header>
@@ -246,7 +246,7 @@
   <p><strong>Step 6: Failure-path verification.</strong> Seeded fault on a scratch branch; runtime fault injection (the API was cut during a live interview to prove the reconnect behavior); migration rollback/redo; a PII audit over all commits and artifacts; CSP verification; a desktop + mobile UI audit that produced finding F-22, fixed immediately; and a mechanical self-review (no new debug output, casts, or disabled rules).</p>
   <p><strong>Step 7: Independent review and fixes.</strong> Before pushing, the full diff was reviewed on two axes, standards (repo conventions, baseline smells) and spec (does the code match the findings, strategy and acceptance criteria). Three real gaps were fixed with new tests; one reviewer finding was rejected as a false positive with written reasoning. Details in §7.</p>
   <p><strong>Step 7b, Failure-path specs.</strong> The brief's "designed failure paths" baseline was audited against the suite: partial writes and malformed output were already covered, but model timeouts, narrative-call failures, duplicate jobs, and stale jobs were not. Four specs were added to pin each behavior to a test.</p>
-  <p><strong>Step 8: Submission.</strong> This report, the curated screenshots in <code>assessment/screenshots/</code>, and a 3–5 minute video walkthrough of the problem → demo → enhancement arc.</p>
+  <p><strong>Step 8: Submission.</strong> This report, the curated screenshots in <code>assessment/screenshots/</code>, and a ~3 minute captioned video walkthrough of the problem → demo → enhancement arc (linked above).</p>
 </section>
 
 <section>
@@ -486,7 +486,7 @@ custom skills (must stay NULL):  1 row, skill_ids=[nil]</pre>
     <tbody>
       <tr><td>Pull request</td><td><a href="https://github.com/rakamindev/ai-interview-platform/pull/182">github.com/rakamindev/ai-interview-platform/pull/182</a></td></tr>
       <tr><td>CI run (green)</td><td><a href="https://github.com/FauzanAhnaf999/ai-interview-platform/actions/runs/40105451888">run #5</a>, API + web jobs passed; <code>zeitwerk:check</code> is part of the API job.</td></tr>
-      <tr><td>Video walkthrough (3-5 min)</td><td><span class="placeholder">[video link, added before portal submission]</span></td></tr>
+      <tr><td>Video walkthrough (~3 min, captioned)</td><td><a href="https://github.com/FauzanAhnaf999/ai-interview-platform/releases/download/case-study-walkthrough/walkthrough.mp4">github.com/FauzanAhnaf999/…/releases/download/case-study-walkthrough/walkthrough.mp4</a></td></tr>
       <tr><td>Main work</td><td><code>feat/platform-revamp</code>, code HEAD <code>55c8a08</code> (34 code commits); report and screenshots are docs-only commits.</td></tr>
       <tr><td>Seeded-fault evidence</td><td><code>scratch/seeded-fault-idor</code>, break (<code>f41c7f4</code>) → revert (<code>862535d</code>), history left visible on purpose.</td></tr>
       <tr><td>Report source</td><td><code>assessment/report.html</code> (print source for this PDF).</td></tr>
