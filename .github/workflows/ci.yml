@@ -48,6 +48,8 @@ jobs:
           bundle exec rails db:create
           psql -h localhost -U postgres -d rakamin_test -c 'CREATE SCHEMA IF NOT EXISTS ai_interview'
           bundle exec rails db:schema:load
+      - name: Zeitwerk check
+        run: bundle exec rails zeitwerk:check
       - name: Lint
         run: bundle exec rubocop
       - name: Test
