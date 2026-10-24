@@ -60,9 +60,9 @@
   <p class="subtitle">AI Interview Platform · revamp report and execution narrative</p>
   <table class="meta">
     <tr><td class="k">Author</td><td>M. Fauzan Ahnaf Athallah</td></tr>
-    <tr><td class="k">Date</td><td>16 October 2026</td></tr>
+    <tr><td class="k">Date</td><td>24 October 2026</td></tr>
     <tr><td class="k">Repository</td><td>github.com/rakamindev/ai-interview-platform</td></tr>
-    <tr><td class="k">Branch</td><td><code>feat/platform-revamp</code>, 31 commits, 74 files changed (+8,447 / −180)</td></tr>
+    <tr><td class="k">Branch</td><td><code>feat/platform-revamp</code> · code HEAD <code>55c8a08</code> · 34 commits · 92 files changed (+8,927 / −180); report/screenshot commits are docs-only</td></tr>
     <tr><td class="k">Pull request</td><td><a href="https://github.com/rakamindev/ai-interview-platform/pull/182">github.com/rakamindev/ai-interview-platform/pull/182</a></td></tr>
     <tr><td class="k">Video walkthrough</td><td><span class="placeholder">[video link, added before portal submission]</span></td></tr>
     <tr><td class="k">Claimed depth</td><td>Frontend-heavy, with real backend depth, argued with evidence in §9</td></tr>
@@ -82,9 +82,9 @@
     <li><strong>A harness where none existed.</strong> RSpec + FactoryBot, Vitest + Testing Library, a RuboCop baseline, and a CI workflow, because none of the five changes above is provable without it.</li>
   </ol>
   <div class="callout">
-    <p><strong>At a glance:</strong> 31 commits · 74 files changed (+8,447 / −180) · 50 API examples · 29 web tests · 111 files lint-clean · 22 findings (1 P0 · 5 P1 · 7 P2 · 9 P3 → 12 fixed, 3 partial, 7 deferred with reasons) · one seeded-fault branch left visible on purpose (§7).</p>
+    <p><strong>At a glance:</strong> 34 code commits at code HEAD <code>55c8a08</code> · 92 files changed (+8,927 / -180) · 50 API examples · 29 web tests · 112 files lint-clean · 22 findings (1 P0 · 5 P1 · 7 P2 · 9 P3 → 12 fixed, 3 partial, 7 deferred with reasons) · one seeded-fault branch left visible on purpose (§7). The report and screenshots are docs-only commits.</p>
   </div>
-  <p class="small">How to read this report: §2 product context and UU PDP; §3 findings; §4 strategy and trade-offs; §5 acceptance criteria and edge cases; §6 the step-by-step execution narrative; §7 verification and evidence; §8 screenshots; §9 claimed depth; §10 limitations and follow-ups; §11 links. The video walkthrough link (§11) is added before portal submission.</p>
+  <p class="small">How to read this report: §2 product context and UU PDP; §3 findings; §4 strategy and trade-offs; §5 acceptance criteria and edge cases; §6 the step-by-step execution narrative; §7 verification and evidence; §8 screenshots; §9 claimed depth; §10 limitations and follow-ups; §11 links; Appendix A the full acceptance-criteria list. The video walkthrough link (§11) is added before portal submission.</p>
 </section>
 
 <section>
@@ -191,7 +191,7 @@
 
 <section>
   <h2>5 · Acceptance criteria &amp; edge cases</h2>
-  <p>35 acceptance criteria were derived <em>before</em> coding, each mapped 1:1 to a test or a recorded walk, including the brief's edge cases (skills never assessed, empty ratings, model failures, odd data types, long text). The table summarizes the areas; the full list, with per-criterion evidence, is part of the working notes and was re-verified before submission.</p>
+  <p>35 acceptance criteria were derived <em>before</em> coding, each mapped 1:1 to a test or a recorded walk, including the brief's edge cases (skills never assessed, empty ratings, model failures, odd data types, long text). The table summarizes the areas; the full list, with per-criterion evidence, is reproduced in Appendix A and was re-verified before submission.</p>
   <table>
     <thead><tr><th style="width:34mm">Area</th><th style="width:12mm">Count</th><th>Representative criteria</th></tr></thead>
     <tbody>
@@ -251,15 +251,15 @@
 
 <section>
   <h2>7 · Verification &amp; evidence</h2>
-  <h3>Gates at final HEAD (<code>f304d07</code>)</h3>
+  <h3>Gates at code HEAD (<code>55c8a08</code>)</h3>
   <table>
     <thead><tr><th style="width:52mm">Gate</th><th>Result</th></tr></thead>
     <tbody>
-      <tr><td>API specs (RSpec + FactoryBot)</td><td>50 examples, 0 failures.</td></tr>
-      <tr><td>API lint (RuboCop)</td><td>111 files inspected, 0 offenses.</td></tr>
+      <tr><td>API specs (RSpec + FactoryBot)</td><td>50 examples, 0 failures (including <code>CI=true</code>).</td></tr>
+      <tr><td>API lint (RuboCop)</td><td>112 files inspected, 0 offenses.</td></tr>
       <tr><td>Web tests (Vitest + Testing Library)</td><td>29 tests across 8 files, all green.</td></tr>
       <tr><td>Web build (TypeScript + Vite)</td><td>Green.</td></tr>
-      <tr><td>CI workflow</td><td>Added (API job: Postgres service, schema load, RuboCop, RSpec; web job: install, build, tests). First run happens on the pull request.</td></tr>
+      <tr><td>CI workflow</td><td>Green on <a href="https://github.com/FauzanAhnaf999/ai-interview-platform/actions/runs/40105451888">run #5</a>: API job (Postgres, schema load, Zeitwerk check, RuboCop, RSpec) + web job (install, build, Vitest) both passed.</td></tr>
     </tbody>
   </table>
   <h3>Seeded fault, proof the tests guard the fix</h3>
@@ -286,6 +286,7 @@ f41c7f4  temp: seed fault to prove the cross-tenant specs fail
   <p><strong>Moment 1: a report that looked right while the model never ran.</strong> Walking the fit/gap flow returned a fully populated report with HTTP 200, but the narrative was a template fallback. The worker log held the truth: <code>API error 404: "This model models/gemini-2.0-flash-001 is no longer available..."</code>. Verification went three layers deep: the verbatim provider error, a live model listing for the same key (no 2.0-generation and no live models at all), and per-model <code>generateContent</code> probes. Outcome: a verified local override to a current model; the retired defaults are flagged as a constraint signal with a documented workaround (F-21). Lesson recorded: “the report renders” is not evidence that the model ran.</p>
   <p><strong>Moment 2: the model was authoring identity.</strong> Portfolio rows stored skill ids like <code>sk-eng-001</code>, invented by the LLM, never validated, while the taxonomy uses <code>SK-ENG-001</code>; cross-layer matching had silently degraded to text labels. Verification: trace a stored id back to the taxonomy, then to the prompt that produced it. Outcome: canonicalization (case-insensitive id → label → null), a prompt that instructs echoing coverage-map ids, and a reversible backfill for existing rows. Lesson: a generative step must never define identifiers; resolve to a source of truth or store null.</p>
   <p><strong>Moment 3: review output is input, not verdict.</strong> An independent two-axis review of the full diff found three real gaps, the unreachable-vs-slow signal was missing (AC-1.4), the fit/gap engine matched ids case-sensitively (AC-5.5), and malformed model output could half-write a portfolio (AC-5.7), all fixed with new tests. It also flagged one duplicate-state concern that turned out to be a false positive: the flag in question distinguishes “session ended when the link was opened” from “ended during this visit”, which the candidate payload cannot express. Rejected with written reasoning instead of applied blindly. Lesson: dispositions matter as much as findings.</p>
+  <p><strong>Moment 4: the AI-assisted harness was green locally but red in CI.</strong> The first CI run failed before a single example ran: with <code>CI=true</code>, <code>config.eager_load</code> turns on, and Zeitwerk expected <code>AudioWebsocketMiddleware</code> while the class is <code>AudioWebSocketMiddleware</code>. The local suite passed only because <code>CI</code> was unset. Verification: reproduced with <code>CI=true bundle exec rspec</code>, read the failing job, registered the <code>WebSocket</code> inflection, added <code>rails zeitwerk:check</code> to CI, and watched run #5 turn green. Lesson: “green on my machine” is not a gate; run the same mode the gate runs.</p>
   <h3>Migration safety</h3>
   <pre>== BackfillAssessmentSkillIds: reverting (down) ==
 == BackfillAssessmentSkillIds: reverted ==
@@ -423,19 +424,76 @@ custom skills (must stay NULL):  1 row, skill_ids=[nil]</pre>
 </section>
 
 <section>
+  <h2>Appendix A · Acceptance criteria, full list</h2>
+  <p>These 35 criteria were derived before implementation and re-checked before submission. §5 summarizes the areas; this appendix reproduces the full list so a reviewer can audit coverage without opening the working notes.</p>
+  <table>
+    <thead><tr><th style="width:15mm">ID</th><th>Criterion</th><th style="width:47mm">Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>AC-0.1</td><td>The existing assessor flow (login, list, create/edit assessment, invite, monitor, portfolio, fit/gap, transcript) still works after every change.</td><td>Manual walk + screenshots.</td></tr>
+      <tr><td>AC-0.2</td><td><code>npm run build</code>, RSpec, RuboCop, Vitest, and the CI workflow are green.</td><td>Local gates + green CI run.</td></tr>
+      <tr><td>AC-0.3</td><td>No new <code>as any</code>, dead code, or debug logging in touched files.</td><td>Mechanical self-review.</td></tr>
+      <tr><td>AC-1.1</td><td>Ping, download, and upload probes all target the API origin, with no env override or third-party CDN.</td><td>Unit test deriving the URL.</td></tr>
+      <tr><td>AC-1.2</td><td><code>POST /api/v1/speed_test</code> returns <code>received_bytes</code>; <code>GET /api/v1/speed_test/download?bytes=N</code> returns N bytes, default 1 MB, capped at 2 MB.</td><td>Request specs.</td></tr>
+      <tr><td>AC-1.3</td><td>One documented threshold constant: download ≥ 2 Mbps, upload ≥ 1 Mbps, ping ≤ 300 ms; any failure means <code>passed=false</code>.</td><td>Unit tests with mocked measurements.</td></tr>
+      <tr><td>AC-1.4</td><td>When all probes fail, the result is <em>unreachable</em>, distinct from <em>slow</em>, and the UI says so.</td><td>Unit test + UI walk.</td></tr>
+      <tr><td>AC-1.5</td><td>A total upload failure never produces a fabricated default that passes the gate.</td><td>Regression unit test (F-02b).</td></tr>
+      <tr><td>AC-1.6</td><td>The UI shows measured values, a specific message, and per-check retry; Start Interview stays disabled until every check passes.</td><td>Walk + screenshots.</td></tr>
+      <tr><td>AC-1.7</td><td><code>application.yml.sample</code> and <code>api/README.md</code> point <code>APP_BASE_URL</code> at the web app, so new invite links open the candidate page.</td><td>Walk of a fresh invite link.</td></tr>
+      <tr><td>AC-1.8</td><td>The web <code>.env.example</code> uses port 3001 and no longer contains <code>VITE_SPEED_TEST_*</code>.</td><td>Diff review.</td></tr>
+      <tr><td>AC-2.1</td><td>An invalid or expired token shows the invalid-link screen, not the completion screen.</td><td>RTL test + UI walk.</td></tr>
+      <tr><td>AC-2.2</td><td>A network or 5xx error shows an error with retry; a successful retry returns to the normal flow.</td><td>RTL test.</td></tr>
+      <tr><td>AC-2.3</td><td>An <code>ended</code> session shows an honest end screen with no false “recorded” claim.</td><td>RTL test.</td></tr>
+      <tr><td>AC-2.4</td><td>A failed invite creation keeps the dialog open with the error visible; success displays the link.</td><td>Walk + screenshot.</td></tr>
+      <tr><td>AC-2.5</td><td>Interview WebSocket/audio behavior is unchanged outside the page-state work.</td><td>Manual walk.</td></tr>
+      <tr><td>AC-2.6</td><td>Exhausted reconnect or a non-recoverable socket error shows the connection-lost screen with Reconnect, not completion; reconnect resumes the interview.</td><td>RTL tests + seeded fault walk.</td></tr>
+      <tr><td>AC-3.1</td><td>Export, GET/POST fit-gap, regenerate, and override routes return 404 for a JWT from another tenant.</td><td>Two-tenant request specs.</td></tr>
+      <tr><td>AC-3.2</td><td>The same tenant still gets 200/201 with the same payload.</td><td>Request specs.</td></tr>
+      <tr><td>AC-3.3</td><td>The old IDOR reproduction (tenant A token, tenant B portfolio) now returns 404.</td><td>Replay of the documented reproduction.</td></tr>
+      <tr><td>AC-4.1</td><td>Every <code>skill_comparisons</code> item has numeric <code>expected_level</code> and boolean <code>is_override</code>; <code>required_level</code> is gone.</td><td>Engine spec with mocked narration.</td></tr>
+      <tr><td>AC-4.2</td><td>The Required column renders <code>expected_level</code>; <code>not_assessed</code> rows remain “—”.</td><td>RTL test + walk.</td></tr>
+      <tr><td>AC-4.3</td><td>An assessor override sets <code>is_override=true</code> and the UI shows the override marker.</td><td>Engine spec + walk.</td></tr>
+      <tr><td>AC-4.4</td><td>A never-assessed skill is <code>not_assessed</code> with a null delta and renders “— Not assessed”.</td><td>Engine spec + walk.</td></tr>
+      <tr><td>AC-4.5</td><td>Levels consistently render as L1–L5, including discovered-skill lists on the fit/gap page.</td><td>RTL test + walk.</td></tr>
+      <tr><td>AC-4.6</td><td>Old reports without <code>is_override</code> still render, treating the missing flag as false.</td><td>RTL regression test.</td></tr>
+      <tr><td>AC-5.1</td><td>Selecting a taxonomy skill stores its <code>skill_id</code>; custom skills stay NULL.</td><td>Walk + API payload assertion.</td></tr>
+      <tr><td>AC-5.2</td><td>New coverage-map rows carry the same canonical <code>skill_id</code>.</td><td>Walk/request inspection.</td></tr>
+      <tr><td>AC-5.3</td><td>Model-authored ids are resolved against the taxonomy (case-insensitive id → label → null); invented ids are never stored; labels remain.</td><td>Service specs with mocked Gemini.</td></tr>
+      <tr><td>AC-5.4</td><td>The prompt asks the model to echo coverage-map ids, but the server never trusts unvalidated ids.</td><td>Prompt/spec review + AI verification moment.</td></tr>
+      <tr><td>AC-5.5</td><td>Fit/gap id matching is case-insensitive (<code>SK-ENG-001</code> matches <code>sk-eng-001</code>).</td><td>Engine spec.</td></tr>
+      <tr><td>AC-5.6</td><td>The backfill fills NULL ids for taxonomy-labelled rows; <code>db:migrate:redo</code> is clean; unrelated data is untouched.</td><td>Migration run + <code>redo</code> evidence.</td></tr>
+      <tr><td>AC-5.7</td><td>Malformed or partial model output marks the portfolio <code>failed</code> with a <code>generation_error</code>, and no half-written portfolio is persisted.</td><td>Two service specs.</td></tr>
+      <tr><td>AC-5.8</td><td>Long text remains bounded to three evidence quotes and does not overflow desktop or mobile cards.</td><td>Walk at desktop + 390 px.</td></tr>
+      <tr><td>AC-6.1</td><td><code>web/package-lock.json</code> is tracked and consistent with <code>package.json</code>, including test devDependencies.</td><td>Diff review.</td></tr>
+    </tbody>
+  </table>
+  <h3>Brief edge cases → acceptance criteria</h3>
+  <table>
+    <thead><tr><th style="width:45mm">Brief edge case</th><th>Mapped criteria</th></tr></thead>
+    <tbody>
+      <tr><td>Skill never assessed</td><td>AC-4.4 (fit/gap <code>not_assessed</code>) and AC-5.3 (unknown skill in model output).</td></tr>
+      <tr><td>Empty ratings or levels</td><td>AC-5.7 (malformed output), AC-4.4 (null candidate level), and the level-clamp regression spec.</td></tr>
+      <tr><td>Model failure, timeout, or partial output</td><td>AC-5.7 (portfolio failed with error) and the fit/gap narrative fallback spec.</td></tr>
+      <tr><td>Odd data types</td><td>AC-5.3/5.5 (invented and case-mismatched ids) and AC-4.1 (number/boolean contract).</td></tr>
+      <tr><td>Long text</td><td>AC-5.8 (three-quote cap and wrapping).</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
   <h2>11 · Links &amp; artifacts</h2>
   <table>
     <thead><tr><th style="width:44mm">Artifact</th><th>Where</th></tr></thead>
     <tbody>
       <tr><td>Pull request</td><td><a href="https://github.com/rakamindev/ai-interview-platform/pull/182">github.com/rakamindev/ai-interview-platform/pull/182</a></td></tr>
-      <tr><td>Video walkthrough (3–5 min)</td><td><span class="placeholder">[video link, added before portal submission]</span></td></tr>
-      <tr><td>Main work</td><td><code>feat/platform-revamp</code>, 31 commits, from the harness through the failure-path specs.</td></tr>
+      <tr><td>CI run (green)</td><td><a href="https://github.com/FauzanAhnaf999/ai-interview-platform/actions/runs/40105451888">run #5</a>, API + web jobs passed; <code>zeitwerk:check</code> is part of the API job.</td></tr>
+      <tr><td>Video walkthrough (3-5 min)</td><td><span class="placeholder">[video link, added before portal submission]</span></td></tr>
+      <tr><td>Main work</td><td><code>feat/platform-revamp</code>, code HEAD <code>55c8a08</code> (34 code commits); report and screenshots are docs-only commits.</td></tr>
       <tr><td>Seeded-fault evidence</td><td><code>scratch/seeded-fault-idor</code>, break (<code>f41c7f4</code>) → revert (<code>862535d</code>), history left visible on purpose.</td></tr>
       <tr><td>Report source</td><td><code>assessment/report.html</code> (print source for this PDF).</td></tr>
       <tr><td>Screenshots</td><td><code>assessment/screenshots/</code>, the curated set embedded in §8.</td></tr>
     </tbody>
   </table>
-  <p class="footer-note">Prepared 16 October 2026, finalized 23 October 2026 · M. Fauzan Ahnaf Athallah · All screenshots and evidence captured from a local run with synthetic demo data; no real candidate data is included anywhere in this repository.</p>
+  <p class="footer-note">Prepared 16 October 2026, finalized 24 October 2026 · M. Fauzan Ahnaf Athallah · All screenshots and evidence captured from a local run with synthetic demo data; no real candidate data is included anywhere in this repository.</p>
 </section>
 </body>
 </html>
